@@ -6,10 +6,18 @@ profile() ->
      profile([]).
 
 profile(Args) ->
+    {ok, _} = snmp_profiler_stats:start_link(),
     ok = snmp_profiler_config:parse_input(Args),
     log(debug, "Profiling with config: ~p", [snmp_profiler_config:dump()]),
     ok = start_snmp(),
-    run_switch("aggr301a-3.sjc3").
+    run_switch("aggr301a-3.sjc3"),
+    log(info, "Waiting for all metrics to be sent...", []),
+    try
+	gen_server:call(snmp_profiler_stats, await, timer:minutes(1))
+    catch
+	exit:{timeout, _} ->
+	    log(error, "Timed out waiting for metrics to finish sending. Stopping without sending all metrics. Graphs may be incomplete.", [])
+    end.
     
 start_snmp() ->
     application:load(snmp),
@@ -61,10 +69,13 @@ run_switch(Name) ->
     snmpm:unregister_agent(UserId, FullName).
 
 instrumented_walk(UserId, TargetName, Oid) ->
-    Result = snmpm:sync_get_next(UserId, TargetName, [Oid]),
+    gen_server:cast(snmp_profiler_stats, {count, "sync_get_next"}),
+    {Time, Result} = timer:tc(fun() -> snmpm:sync_get_next(UserId, TargetName, [Oid]) end),
     case Result of
 	{error, {timeout, _}} ->
+	    gen_server:cast(snmp_profiler_stats, {count, "timeout"}),
 	    timeout;
 	{ok, {noError, _, [{varbind, _NextOid, _Type, Value, IndexThing}]}, _} ->
+	    gen_server:cast(snmp_profiler_stats, {histo, "response_time", Time/1000}),
 	    {Value, IndexThing}
     end.
