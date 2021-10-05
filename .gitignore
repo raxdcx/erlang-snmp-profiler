@@ -1,0 +1,6 @@
+# emacs backup files
+*~
+# compiled beam directory
+/ebin
+# snmp work db; doesn't need to be persisted
+/snmp_work_dir/db/snmpm_config_db
