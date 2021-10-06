@@ -60,7 +60,8 @@ validate_args("community-string") ->
     end.
 
 dump() ->
-    maps:from_list(ets:tab2list(snmp_profiler_config)).
+    Raw = maps:from_list(ets:tab2list(snmp_profiler_config)),
+    Raw#{"community-string" := "********"}.
 
 verbose() ->
     getk("verbose").
