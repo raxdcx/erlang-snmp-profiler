@@ -10,7 +10,7 @@ profile(Args) ->
     ok = snmp_profiler_config:parse_input(Args),
     log(debug, "Profiling with config: ~p", [snmp_profiler_config:dump()]),
     ok = start_snmp(),
-    run_switch("aggr301a-3.sjc3"),
+    run_switch(snmp_profiler_config:test_one()),
     log(info, "Waiting for all metrics to be sent...", []),
     try
 	gen_server:call(snmp_profiler_stats, await, timer:minutes(1))
@@ -48,9 +48,17 @@ run_switch(Name) ->
 		   match -> Name;
 		   nomatch -> Name ++ ".rackspace.net"
 	       end,
-    {ok, Address} = inet:getaddr(FullName, inet),
-    Oid = [1,3,6,1,2,1,17,1,4,1,2],
-    log(debug, "Address for ~s is ~p", [FullName, Address]),
+    case inet:getaddr(FullName, inet) of
+	{error, nxdomain} ->
+	    log(user, "The switch name '~s' doesn't resolve in DNS. Skipping it.", [Name]),
+	    bad_switch_name;
+	{ok, Address} ->
+	    log(debug, "Address for ~s is ~p", [FullName, Address]),
+	    run_switch_with_addr(FullName, Address)
+    end.
+
+run_switch_with_addr(FullName, Address) ->
+    Oid = oid_to_walk(),
     Opts = [{engine_id, "manager's engine"},
 	    {address,   Address},
 	    {community, snmp_profiler_config:community_string()},
@@ -113,3 +121,6 @@ same_oid_retries() -> 5.
 
 %% @doc Timeout for a single sync_get_next() call. Might want to make this configurable.
 single_oid_timeout() -> timer:seconds(5).
+
+%% @doc The OID to walk. Might want to make this configurable.
+oid_to_walk() -> [1,3,6,1,2,1,17,1,4,1,2].

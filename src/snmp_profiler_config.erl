@@ -4,7 +4,8 @@
 	 stop/0,
 	 dump/0,
 	 verbose/0,
-	 community_string/0
+	 community_string/0,
+	 test_one/0
 	]).
 -import(snmp_profiler_utils, [die/2, log/3]).
 
@@ -66,3 +67,6 @@ verbose() ->
 
 community_string() ->
     getk("community-string").
+
+test_one() ->
+    getk("test-one").
