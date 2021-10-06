@@ -1,5 +1,5 @@
 -module(snmp_profiler_utils).
--export([die/2, log/3]).
+-export([die/2, log/3, usage/0]).
 
 die(Message, Opts) ->
     Prefix = case proplists:get_value(internal, Opts, false) of
@@ -25,16 +25,28 @@ usage() ->
 	 "  -c, --community-string=STRING",
 	 "                   specify the SNMP v2c community string to use",
 	 "  -f, --datafile=FILE",
-	 "                   specify a file containing a list of switch names to test",
+	 "                   specify a file containing a list of switch names to test;",
 	 "                   see DATAFILES; either this or --test-one must be provided",
+	 "  -h, --help       show this usage information",
 	 "  -o, --test-one=SWITCHNAME",
 	 "                   test performance of a single switch; either this or the",
 	 "                   --datafile option must be provided",
-	 "  -v, --verbose    increase output verbosity; may be used multiple times",
+	 "  -v, --verbose    increase output verbosity; may be used multiple times;",
+	 "                   once enables INFO logs, twice enables DEBUG logs",
 	 "",
 	 "DATAFILES",
 	 "",
-	 "  TBD"
+	 "  A datafile is just a file containing names of multiple switches to test.",
+	 "  Switch names are separated by any whitespace (space, carriage return,",
+	 "  newline, or tab). Lines starting with '#' are ignored. Names may omit or",
+	 "  include the '.rackspace.net' suffix. For example, this could be a data"
+	 "  file containing four switches to test:",
+	 "",
+	 "          # These are bogus test switches",
+	 "          bob.ord1",
+	 "          alice.ord1  chuck.ord1.rackspace.net",
+	 "",
+	 "          dave.ord1"
 	],
     io:format([string:join(Usage, "\n"), "\n"]).
 

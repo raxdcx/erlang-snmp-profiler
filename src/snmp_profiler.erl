@@ -10,7 +10,7 @@ profile(Args) ->
     ok = snmp_profiler_config:parse_input(Args),
     log(debug, "Profiling with config: ~p", [snmp_profiler_config:dump()]),
     ok = start_snmp(),
-    run_switch(snmp_profiler_config:test_one()),
+    run_test(),
     log(info, "Waiting for all metrics to be sent...", []),
     try
 	gen_server:call(snmp_profiler_stats, await, timer:minutes(1))
@@ -42,6 +42,39 @@ start_snmp() ->
 	    die(Msg2, [internal])
     end.
 
+run_test() ->
+    UnsetValue = snmp_profiler_config:unset_config_value(),
+    case snmp_profiler_config:test_one() of
+	UnsetValue ->
+	    File = snmp_profiler_config:datafile(),
+	    log(info, "Running datafile '~s'", [File]),
+	    run_file(File);
+	Value ->
+	    run_switch(Value)
+    end.
+
+run_file(File) ->
+    case file:read_file(File) of
+	{ok, Bin} ->
+	    run_file_content(File, Bin);
+	{error, enoent} ->
+	    log(user, "Given datafile doesn't exist: '~s'", [File]),
+	    die("Couldn't open datafile", []);
+	Error ->
+	    Msg = io_lib:format("Couldn't open datafile:\n~p", [Error]),
+	    die(Msg, [internal])
+    end.
+
+run_file_content(File, Content) ->
+    SwitchNames = string:tokens(binary_to_list(Content), " \r\n\t"),
+    case SwitchNames of
+	[] ->
+	    log(user, "The given datafile was empty: '~s'", [File]);
+	_ ->
+	    log(debug, "Testing ~p switches from file", [length(SwitchNames)]),
+	    [run_switch(It) || It <- SwitchNames]
+    end.
+
 run_switch(Name) ->
     log(info, "Testing switch ~s", [Name]),
     FullName = case re:run(Name, "\.rackspace\.net$", [{capture, none}]) of
@@ -50,7 +83,7 @@ run_switch(Name) ->
 	       end,
     case inet:getaddr(FullName, inet) of
 	{error, nxdomain} ->
-	    log(user, "The switch name '~s' doesn't resolve in DNS. Skipping it.", [Name]),
+	    log(user, "The name '~s' doesn't resolve in DNS. Skipping it.", [FullName]),
 	    bad_switch_name;
 	{ok, Address} ->
 	    log(debug, "Address for ~s is ~p", [FullName, Address]),
@@ -91,7 +124,7 @@ walk_r(StartTime, UserId, TargetName, FirstOid, CurrentOid, Attempts) ->
 	    case lists:prefix(FirstOid, NextOid) of
 		true ->
 		    Elapsed = erlang:system_time(milli_seconds) - StartTime,
-		    histo("full_walk", Elapsed);
+		    histo("full_walk_time", Elapsed);
 		false ->
 		    walk_r(StartTime, UserId, TargetName, FirstOid, NextOid, same_oid_retries())
 	    end

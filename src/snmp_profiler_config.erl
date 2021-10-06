@@ -2,10 +2,12 @@
 -export([
 	 parse_input/1,
 	 stop/0,
+	 unset_config_value/0,
 	 dump/0,
 	 verbose/0,
 	 community_string/0,
-	 test_one/0
+	 test_one/0,
+	 datafile/0
 	]).
 -import(snmp_profiler_utils, [die/2, log/3]).
 
@@ -46,18 +48,23 @@ parse_args([H|_]) ->
 
 validate_args(target) ->
     case {getk("datafile"), getk("test-one")} of
-	{"no_datafile_given", "no_test_one_given"} ->
+	{"unset_config_value", "unset_config_value"} ->
 	    die("Missing required option: one of --datafile or --test-one must be given", [usage]);
 	_ ->
 	    validate_args("community-string")
     end;
 validate_args("community-string") ->
     case getk("community-string") of
-	"no_community_string_given" ->
+	"unset_config_value" ->
 	    die("Missing required option --community-string", [usage]);
 	_ ->
 	    ok
     end.
+
+%% @doc If a config item is set to this value, it means the user
+%% didn't specify a value for it.
+unset_config_value() ->
+    "unset_config_value".
 
 dump() ->
     Raw = maps:from_list(ets:tab2list(snmp_profiler_config)),
@@ -71,3 +78,6 @@ community_string() ->
 
 test_one() ->
     getk("test-one").
+
+datafile() ->
+    getk("datafile").

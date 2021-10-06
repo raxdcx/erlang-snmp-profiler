@@ -4,19 +4,20 @@
 # to make the arg handling nice, I'm preprocessing them here
 # with getopt. Each long argument name here corresponds to
 # a config item in the erlang program.
-temp=$(getopt -o vc:f:o: --long verbose,community-string:,datafile:,test-one: -n "$0" -- "$@")
+temp=$(getopt -o hvc:f:o: --long help,verbose,community-string:,datafile:,test-one: -n "$0" -- "$@")
 
 [ $? -eq 0 ] || { echo "Terminating..." >&2; exit 1; }
 
 eval set -- "$temp"
 
 verbose=0
-datafile=no_datafile_given
-community_string=no_community_string_given
-test_one=no_test_one_given
+datafile=unset_config_value
+community_string=unset_config_value
+test_one=unset_config_value
 
 while true; do
     case "$1" in
+	-h | --help ) erl -pa ebin -noshell -run snmp_profiler_utils usage -s erlang halt; exit 0 ;;
 	-v | --verbose ) verbose=$((verbose+1)); shift ;;
 	-f | --datafile ) datafile="$2"; shift 2 ;;
 	-c | --community-string ) community_string="$2"; shift 2 ;;
