@@ -44,7 +44,7 @@ usage() ->
 %% a log, just prints the given output to the user. This output is always
 %% on, no matter what, as is error logging.
 log(user, Format, Args) ->
-    io:format([Format, "\n"], Args);
+    io:format(lists:flatten(["USER  - ", Format, "\n"]), Args);
 log(Level, Format, Args) ->
     LevelNumber = maps:get(Level, #{
 			     error => 0,
@@ -56,5 +56,5 @@ log(Level, Format, Args) ->
 	    ok;
 	true ->
 	    LevelName = string:to_upper(atom_to_list(Level)),
-	    io:format("~s - ~s\n", [LevelName, io_lib:format(Format, Args)])
+	    io:format("~-5s - ~s\n", [LevelName, io_lib:format(Format, Args)])
     end.
