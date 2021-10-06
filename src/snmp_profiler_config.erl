@@ -29,8 +29,8 @@ getk(K) ->
 %% @doc Will parse cmdline args and return a good config or die trying.
 parse_args([]) ->
     validate_args(target);
-parse_args(["dc", DC | T]) ->
-    ins("dc", DC),
+parse_args(["datafile", File | T]) ->
+    ins("datafile", File),
     parse_args(T);
 parse_args(["test-one", SwitchName | T]) ->
     ins("test-one", SwitchName),
@@ -45,9 +45,9 @@ parse_args([H|_]) ->
     die(io_lib:format("Unrecognized argument: ~s", [H]), [usage]).
 
 validate_args(target) ->
-    case {getk("dc"), getk("test-one")} of
-	{"no_dc_given", "no_test_one_given"} ->
-	    die("Missing required option: one of --dc or --test-one must be given", [usage]);
+    case {getk("datafile"), getk("test-one")} of
+	{"no_datafile_given", "no_test_one_given"} ->
+	    die("Missing required option: one of --datafile or --test-one must be given", [usage]);
 	_ ->
 	    validate_args("community-string")
     end;
