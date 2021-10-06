@@ -6,6 +6,7 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, #{}, []).
 
 init(#{}) ->
+    ets:new(snmp_profiler_stats, [named_table, public]),
     {ok, #{}}.
 
 %% @doc Lets the main program wait for all metrics to be sent before shutting down.
@@ -18,9 +19,11 @@ handle_call(await, _From, _State) ->
 
 handle_cast(Request, State) ->
     {SimpleName, Value} = case Request of
-			      {count, Name} -> {Name, <<"1">>};
 			      {histo, Name, V} when is_float(V) -> {Name, float_to_binary(V)};
-			      {histo, Name, V} when is_integer(V) -> {Name, integer_to_binary(V)}
+			      {histo, Name, V} when is_integer(V) -> {Name, integer_to_binary(V)};
+			      {count, Name} ->
+				  Count = ets:update_counter(snmp_profiler_stats, Name, 1, {Name, 0}),
+				  {Name, integer_to_binary(Count)}
 			  end,
     MetricName = list_to_binary(["snmp_profiler.", SimpleName]),
     Time = integer_to_binary(erlang:system_time(seconds)),

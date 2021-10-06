@@ -77,19 +77,23 @@ run_switch_with_addr(FullName, Address) ->
     snmpm:unregister_agent(UserId, FullName).
 
 walk(UserId, TargetName, Oid) ->
-    walk_r(UserId, TargetName, Oid, Oid, same_oid_retries()).
+    StartTime = erlang:system_time(milli_seconds),
+    walk_r(StartTime, UserId, TargetName, Oid, Oid, same_oid_retries()).
 
-walk_r(_UserId, _TargetName, _FirstOid, _CurrentOid, 0) ->
+walk_r(_StartTime, _UserId, _TargetName, _FirstOid, _CurrentOid, 0) ->
     count("failed_walk"),
     all_failed;
-walk_r(UserId, TargetName, FirstOid, CurrentOid, Attempts) ->
+walk_r(StartTime, UserId, TargetName, FirstOid, CurrentOid, Attempts) ->
     case get_next(UserId, TargetName, CurrentOid) of
 	timeout ->
-	    walk_r(UserId, TargetName, FirstOid, CurrentOid, Attempts - 1);
+	    walk_r(StartTime, UserId, TargetName, FirstOid, CurrentOid, Attempts - 1);
 	{NextOid, _Value, _IndexThing} ->
 	    case lists:prefix(FirstOid, NextOid) of
-		true -> done;
-		false -> walk_r(UserId, TargetName, FirstOid, NextOid, same_oid_retries())
+		true ->
+		    Elapsed = erlang:system_time(milli_seconds) - StartTime,
+		    histo("full_walk", Elapsed);
+		false ->
+		    walk_r(StartTime, UserId, TargetName, FirstOid, NextOid, same_oid_retries())
 	    end
     end.
 
