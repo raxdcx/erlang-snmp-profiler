@@ -122,10 +122,11 @@ walk_r(StartTime, UserId, TargetName, FirstOid, CurrentOid, Attempts) ->
 	    walk_r(StartTime, UserId, TargetName, FirstOid, CurrentOid, Attempts - 1);
 	{NextOid, _Value, _IndexThing} ->
 	    case lists:prefix(FirstOid, NextOid) of
-		true ->
+		false ->
+		    log(debug, "~p not a prefix of ~p; walk finished", [FirstOid, NextOid]),
 		    Elapsed = erlang:system_time(milli_seconds) - StartTime,
 		    histo("full_walk_time", Elapsed);
-		false ->
+		true ->
 		    walk_r(StartTime, UserId, TargetName, FirstOid, NextOid, same_oid_retries())
 	    end
     end.
@@ -140,8 +141,9 @@ get_next(UserId, TargetName, Oid) ->
 	    log(debug, "sync_get_next timeout on ~p", [Oid]),
 	    count("timeout"),
 	    timeout;
-	{ok, {noError, _, [{varbind, NextOid, _Type, Value, IndexThing}]}, _} ->
+	{ok, {noError, _, [{varbind, NextOid, Type, Value, IndexThing}]}, _} ->
 	    histo("response_time", Time/1000),
+	    log(debug, "~p = ~s: ~p", [Oid, Type, Value]),
 	    {NextOid, Value, IndexThing}
     end.
 
