@@ -23,7 +23,9 @@ jobs:
           # is only built for older ubuntu's, which is why this uses 18.04.
           otp-version: "18.3.4.11"
       - name: "Build"
-        run: ./compile.sh && tar czf snmp-profiler.tar.gz *
+        run: ./compile.sh
+      - name: "Package"
+        run: tar czf snmp-profiler-${{github.sha}}.tar.gz --transform 's,^,snmp-profiler-${{github.sha}}/,' *
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
