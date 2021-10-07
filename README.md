@@ -14,7 +14,7 @@ I observed some strang behavior with Erlang's SNMP in which SNMP
 This is meant to run in an Erlang Docker container for easy
 portability. Start one from this project dir with
 
-    docker run --rm -it -v $(pwd):/app -w /app -p 5000:5000 \
+    docker run --rm -it -v $(pwd):/app -w /app -p 21312:21312 \
         erlang:18.3.4.11 bash
 
 Three shell scripts give you basic functionality:
