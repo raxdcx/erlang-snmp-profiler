@@ -66,7 +66,8 @@ run_file(File) ->
     end.
 
 run_file_content(File, Content) ->
-    SwitchNames = string:tokens(binary_to_list(Content), " \r\n\t"),
+    WithoutComments = re:replace(Content, "^#.*$", "", [global, multiline, {return, list}]),
+    SwitchNames = string:tokens(WithoutComments, " \r\n\t"),
     case SwitchNames of
 	[] ->
 	    log(user, "The given datafile was empty: '~s'", [File]);
