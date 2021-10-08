@@ -27,9 +27,89 @@ Three shell scripts give you basic functionality:
 
 ## Distribution
 
-This is TBD, but I'll come up with a way to bundle this up nicely so
-that anyone with access to a server can run the `run.sh` script to run
-performance tests.
+The project is built and archived to a tar.gz file that's available on
+the [Github Releases page](
+https://github.com/raxdcx/erlang-snmp-profiler/releases). At its
+current state, you need both docker and docker-compose to run
+it. Then:
+
+1. Download and extract the archive.
+
+1. Change to the extracted directory, like `cd snmp-profiler-X.X.X`.
+
+1. Run `docker-compose up`.
+
+1. Open a new terminal, and change to the extracted directory again.
+
+1. Run `docker ps`, and find the name or id of the running erlang
+container.
+
+1. Run `docker exec -it -w /app $CONTAINER_ID bash`.
+
+1. Run the project with `./run.sh [OPTIONS]`.
+
+1. View the output in Grafana, which is running on port 3000. For
+   security, it's bound only to the local interface, so you'll need to
+   make some kind of proxy/tunnel. I recommend [sshuttle](
+   https://github.com/sshuttle/sshuttle), such as
+
+   ```
+   sshuttle -r $ADDRESS $ADDRESS
+   ```
+
+   where `$ADDRESS` is the server running the tool. Then browse to
+   `http://$ADDRESS:3000`. Otherwise, you can use plain ssh to establish
+   a tunnel, like
+
+   ```
+   ssh -L 1234:localhost:3000 $ADDRESS
+   ```
+
+   and then browse to http://localhost:1234.
+
+## Known issues/TODO
+
+- [ ] Build in docker-compose so the user doesn't have to go get it
+  themselves.
+
+- [ ] Make running the project simpler overall. There should only be
+  three steps: download, extract, and execute.
+
+- [ ] Figure out what other metrics make sense to track. Should metric
+  names include the switch name? Like instead of
+  `snmp_profiler.sync_get_next`, it could be
+  `snmp_profiler.ord1.a3-1-1.sync_get_next`.
+
+- [ ] Verify that all emitted metrics are making it to
+  Graphite/Grafana. I've seen some discrepancies that make me think
+  they're not. Try checking a count of emitted metrics against some of
+  the counts in Grafana.
+
+The current approach of mounting directories into containers can cause
+issues on hardened servers:
+
+- [ ] docker-compose seems to use /tmp for some intermediate
+  script(s), and if /tmp is mounted with `noexec`, it'll fail with an
+  error like this:
+
+  ```
+  ./docker-compose: error while loading shared libraries: libz.so.1: failed to map segment from shared object: Operation not permitted
+  ```
+
+  To solve this, you can create a "temporary temporary" directory in
+  the project directory, like `mkdir tmp` and then `export
+  TMPDIR=tmp` to tell docker-compose to use that instead.
+
+- [ ] The Grafana mounted files at `grafana/mounts` have to be
+  readable by the `grafana` user in the Grafana container. If the file
+  permissions are too restrictive when you extract the archive,
+  Grafana will fail to start with an error like
+
+  ```
+  CRIT[10-08|14:50:43] failed to parse "/etc/grafana/grafana.ini": open /etc/grafana/grafana.ini: permission denied
+  ```
+
+  To solve this, you can run `chmod a+rX grafana`.
 
 ## Design
 
